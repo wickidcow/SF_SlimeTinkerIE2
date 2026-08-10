@@ -16,6 +16,9 @@ on:
 permissions:
   contents: write
 
+env:
+  LEGACY_ARTIFACT_VERSION: "1.0.0"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,22 +38,23 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
-      - name: Stage SF_SlimeTinkerIE2.jar
+      - name: Stage versioned Legacy JAR
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
           mapfile -t jars < <(find target -maxdepth 1 -type f -name '*.jar' ! -name 'original-*' ! -name '*-sources.jar' ! -name '*-javadoc.jar')
           test "${#jars[@]}" -eq 1
-          cp "${jars[0]}" dist/SF_SlimeTinkerIE2.jar
-          test -s dist/SF_SlimeTinkerIE2.jar
-          sha256sum dist/SF_SlimeTinkerIE2.jar
+          OUTPUT="dist/SF_SlimeTinkerIE2_Legacy_v${LEGACY_ARTIFACT_VERSION}.jar"
+          cp "${jars[0]}" "$OUTPUT"
+          test -s "$OUTPUT"
+          sha256sum "$OUTPUT"
 
-      - name: Upload SF_SlimeTinkerIE2.jar
-        uses: actions/upload-artifact@v4
+      - name: Upload direct versioned Legacy JAR
+        uses: actions/upload-artifact@v7
         with:
-          name: SF_SlimeTinkerIE2
-          path: dist/SF_SlimeTinkerIE2.jar
+          path: dist/SF_SlimeTinkerIE2_Legacy_v${{ env.LEGACY_ARTIFACT_VERSION }}.jar
+          archive: false
           if-no-files-found: error
 
       - name: Publish direct JAR release asset
@@ -60,7 +64,7 @@ jobs:
         shell: bash
         run: |
           TAG="$GITHUB_REF_NAME"
-          JAR="dist/SF_SlimeTinkerIE2.jar"
+          JAR="dist/SF_SlimeTinkerIE2_Legacy_v${LEGACY_ARTIFACT_VERSION}.jar"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$JAR" --clobber
           else

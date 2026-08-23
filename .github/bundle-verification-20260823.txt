@@ -1,1 +1,1 @@
-Server bundle verification for 2026-08-23 from the v2.0.3 release source.
+Server bundle verification for 2026-08-23 from the exact v2.0.3 release source — artifact rerun.

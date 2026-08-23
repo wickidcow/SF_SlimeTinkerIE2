@@ -9,6 +9,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("SpellCheckingInspection")
@@ -68,6 +69,12 @@ public final class ThemeUtils {
     public static final String LORE_MULTIBLOCK = ITEM_TYPEDESC + "Mutliblock";
 
     @Nonnull
+    private static List<String> mutableLore(@Nonnull ItemMeta meta) {
+        List<String> lore = meta.getLore();
+        return lore != null ? lore : new ArrayList<>();
+    }
+
+    @Nonnull
     @ParametersAreNonnullByDefault
     public static SlimefunItemStack themedItemStack(String id,
                                                     String skull,
@@ -82,7 +89,7 @@ public final class ThemeUtils {
             ""
         );
         ItemMeta im = itemStack.getItemMeta();
-        List<String> lore = im.getLore();
+        List<String> lore = mutableLore(im);
         for (String s : loreLines) {
             lore.add(ThemeUtils.PASSIVE + s);
         }
@@ -108,7 +115,7 @@ public final class ThemeUtils {
             ""
         );
         ItemMeta im = itemStack.getItemMeta();
-        List<String> lore = im.getLore();
+        List<String> lore = mutableLore(im);
         for (String s : loreLines) {
             lore.add(ThemeUtils.PASSIVE + s);
         }
@@ -134,7 +141,7 @@ public final class ThemeUtils {
             ""
         );
         ItemMeta im = itemStack.getItemMeta();
-        List<String> lore = im.getLore();
+        List<String> lore = mutableLore(im);
         for (String s : loreLines) {
             lore.add(ThemeUtils.PASSIVE + s);
         }
@@ -160,7 +167,7 @@ public final class ThemeUtils {
             ""
         );
         ItemMeta im = itemStack.getItemMeta();
-        List<String> lore = im.getLore();
+        List<String> lore = mutableLore(im);
         for (String s : loreLines) {
             lore.add(ThemeUtils.PASSIVE + s);
         }

@@ -21,12 +21,9 @@ import io.github.sefiraat.slimetinker.managers.MemoryManager;
 import io.github.sefiraat.slimetinker.managers.TraitManager;
 import io.github.sefiraat.slimetinker.runnables.RunnableManager;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
-import net.guizhanss.guizhanlibplugin.updater.GuizhanUpdater;
 
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.logging.Level;
 
 public class SlimeTinker extends JavaPlugin implements SlimefunAddon {
 
@@ -36,7 +33,6 @@ public class SlimeTinker extends JavaPlugin implements SlimefunAddon {
 
     private final String username;
     private final String repo;
-    private final String branch;
 
     private RunnableManager runnableManager;
     private ListenerManager listenerManager;
@@ -49,19 +45,10 @@ public class SlimeTinker extends JavaPlugin implements SlimefunAddon {
     public SlimeTinker() {
         this.username = "SlimefunGuguProject";
         this.repo = "SlimeTinker";
-        this.branch = "master";
     }
 
     @Override
     public void onEnable() {
-
-        if (!getServer().getPluginManager().isPluginEnabled("GuizhanLibPlugin")) {
-            getLogger().log(Level.SEVERE, "This plugin requires GuizhanLibPlugin to run.");
-            getLogger().log(Level.SEVERE, "Download: https://50l.cc/gzlib");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
         new Metrics(this, 11748);
 
         instance = this;
@@ -87,10 +74,6 @@ public class SlimeTinker extends JavaPlugin implements SlimefunAddon {
         memoryManager = new MemoryManager();
 
         this.listenerManager = new ListenerManager(this, this.getServer().getPluginManager());
-
-        if (getConfig().getBoolean("auto-update") && getDescription().getVersion().startsWith("Build")) {
-            GuizhanUpdater.start(this, getFile(), username, repo, branch);
-        }
     }
 
     @Override

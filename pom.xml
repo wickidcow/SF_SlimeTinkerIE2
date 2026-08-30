@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.sefiraat</groupId>
     <artifactId>SlimeTinker</artifactId>
-    <version>2.0.3-IE2-26.2-Albion</version>
+    <version>2.0.4-IE2-26.2-Albion</version>
 
     <name>SlimeTinker2</name>
     <description>Slimefun addon SlimeTinker2 with InfinityExpansion2 and DynaTech compatibility</description>
@@ -235,12 +235,6 @@
             <groupId>com.github.SlimefunGuguProject</groupId>
             <artifactId>Slimefun4</artifactId>
             <version>2024.3.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.guizhanss</groupId>
-            <artifactId>GuizhanLibPlugin</artifactId>
-            <version>1.4.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -1,2 +1,2 @@
-# Enable automatic updates (downloads a new version from the build site; takes effect after restart)
-auto-update: true
+# SlimeTinker Legacy 2.0.4 no longer uses GuizhanLibPlugin for automatic updates.
+# Updates are distributed as raw JAR assets through this fork's GitHub releases.

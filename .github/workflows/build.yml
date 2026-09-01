@@ -13,8 +13,8 @@ permissions:
   contents: write
 
 env:
-  LEGACY_ARTIFACT_VERSION: "2.0.4"
-  OUTPUT_NAME: "SF_SlimeTinkerIE2-2.0.4.jar"
+  LEGACY_ARTIFACT_VERSION: "2.0.5"
+  OUTPUT_NAME: "SF_SlimeTinkerIE2-2.0.5.jar"
 
 jobs:
   build:

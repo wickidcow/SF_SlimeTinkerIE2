@@ -69,7 +69,7 @@ public class EntityDamagedListener implements Listener {
                     friend.setDamageMod(friend.getDamageMod() * 3);
                     Particle.DustOptions dustOptions = new Particle.DustOptions(Color.YELLOW, 5);
                     e.getWorld().spawnParticle(Particle.DUST, e.getLocation(), 50, 1, 1, 1, 0.5, dustOptions, true);
-                    PotionEffect potionEffect = new PotionEffect(PotionEffectType.SLOWNESSNESS, 40, 99);
+                    PotionEffect potionEffect = new PotionEffect(PotionEffectType.SLOWNESS, 40, 99);
                     e.addPotionEffect(potionEffect);
                 }
             }

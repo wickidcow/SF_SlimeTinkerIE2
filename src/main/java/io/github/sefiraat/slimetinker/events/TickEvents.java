@@ -196,7 +196,7 @@ public final class TickEvents {
     }
 
     public static void rodSilver(EventFriend friend) {
-        increaseEffect(PotionEffectType.SLOWNESS_FALLING, friend.getPotionEffects(), 3);
+        increaseEffect(PotionEffectType.SLOW_FALLING, friend.getPotionEffects(), 3);
     }
 
     public static void rodBillon(EventFriend friend) {

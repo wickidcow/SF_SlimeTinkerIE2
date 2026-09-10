@@ -138,7 +138,7 @@ public class EntityKilledListener implements Listener {
                 Location location = entity.getLocation().clone().add(0.5, 0.5, 0.5);
                 entity.getWorld().dropItemNaturally(location, additionalDrop);
                 Particle.DustOptions dustOptions = new Particle.DustOptions(Color.BLUE, 2);
-                entity.getWorld().spawnParticle(Particle.REDSTONE, location, 10, 0.2, 0.2, 0.2, 0.5, dustOptions);
+                entity.getWorld().spawnParticle(Particle.DUST, location, 10, 0.2, 0.2, 0.2, 0.5, dustOptions);
             }
         }
     }

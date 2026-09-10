@@ -65,10 +65,10 @@ public class EffectTick extends BukkitRunnable {
     }
 
     private void modRedstone(int level, @Nonnull Map<PotionEffectType, Integer> potionEffects) {
-        if (potionEffects.containsKey(PotionEffectType.FAST_DIGGING)) {
-            potionEffects.put(PotionEffectType.FAST_DIGGING, potionEffects.get(PotionEffectType.FAST_DIGGING) + level);
+        if (potionEffects.containsKey(PotionEffectType.HASTE)) {
+            potionEffects.put(PotionEffectType.HASTE, potionEffects.get(PotionEffectType.HASTE) + level);
         } else {
-            potionEffects.put(PotionEffectType.FAST_DIGGING, level);
+            potionEffects.put(PotionEffectType.HASTE, level);
         }
     }
 }

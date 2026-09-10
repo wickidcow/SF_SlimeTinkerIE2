@@ -166,7 +166,7 @@ public final class Dies {
     };
     protected static final ItemStack[] RECIPE_DIE_MAIL_LINKS = new ItemStack[]{
         null, null, null,
-        null, new ItemStack(Material.CHAIN), null,
+        null, new ItemStack(Material.IRON_CHAIN), null,
         null, null, null
     };
     protected static final ItemStack[] RECIPE_DIE_REPAIR_KIT = new ItemStack[]{

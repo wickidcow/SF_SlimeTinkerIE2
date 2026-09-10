@@ -33,7 +33,27 @@ jobs:
         run: java -version
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        id: maven_build
+        shell: bash
+        run: |
+          set +e
+          mvn clean package -DskipTests 2>&1 | tee compile-errors.txt
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Persist compiler diagnostics
+        if: failure() && steps.maven_build.outcome == 'failure' && github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add compile-errors.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: capture compiler diagnostics [skip ci]"
+            git push
+          fi
 
       - name: Stage raw versioned JAR
         shell: bash

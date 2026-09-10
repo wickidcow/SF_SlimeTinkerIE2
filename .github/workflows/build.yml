@@ -32,6 +32,49 @@ jobs:
       - name: Confirm Java version
         run: java -version
 
+      - name: Apply remaining Paper 26.2 API names
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              "Particle.REDSTONE": "Particle.DUST",
+              "Particle.FIREWORKS_SPARK": "Particle.FIREWORK",
+              "PotionEffectType.FAST_DIGGING": "PotionEffectType.HASTE",
+              "PotionEffectType.SLOW_DIGGING": "PotionEffectType.MINING_FATIGUE",
+              "PotionEffectType.INCREASE_DAMAGE": "PotionEffectType.STRENGTH",
+              "PotionEffectType.JUMP": "PotionEffectType.JUMP_BOOST",
+              "PotionEffectType.CONFUSION": "PotionEffectType.NAUSEA",
+              "PotionEffectType.SLOW": "PotionEffectType.SLOWNESS",
+              "Attribute.GENERIC_MAX_HEALTH": "Attribute.MAX_HEALTH",
+              "EntityType.PRIMED_TNT": "EntityType.TNT",
+          }
+
+          changed = []
+          for path in Path("src/main/java").rglob("*.java"):
+              original = path.read_text(encoding="utf-8")
+              updated = original
+              for old, new in replacements.items():
+                  updated = updated.replace(old, new)
+              if updated != original:
+                  path.write_text(updated, encoding="utf-8")
+                  changed.append(str(path))
+
+          print("Updated files:")
+          print("\n".join(changed))
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/java
+          if ! git diff --cached --quiet; then
+            git commit -m "fix: migrate remaining Paper 26.2 API names [skip ci]"
+            git push
+          fi
+
       - name: Build with Maven
         id: maven_build
         shell: bash

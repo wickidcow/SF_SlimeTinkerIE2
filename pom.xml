@@ -34,7 +34,8 @@
     </scm>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
+        <paper.version>26.2.build.123-stable</paper.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -101,7 +102,7 @@
                             <includeDependencySources>false</includeDependencySources>
 
                             <links>
-                                <link>https://hub.spigotmc.org/javadocs/spigot/</link>
+                                <link>https://jd.papermc.io/paper/26.2/</link>
                             </links>
                         </configuration>
 
@@ -226,9 +227,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.19-R0.1-SNAPSHOT</version>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${paper.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

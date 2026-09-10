@@ -48,11 +48,11 @@ public class KingsmanSpam extends BukkitRunnable {
             Location l4 = WorldUtils.getRandomLocationInRange(p, 5, 2, 5);
             Location l5 = WorldUtils.getRandomLocationInRange(p, 5, 2, 5);
 
-            l.getWorld().spawnParticle(Particle.REDSTONE, l1, 30, 3, 3, 3, 1, d1);
-            l.getWorld().spawnParticle(Particle.REDSTONE, l2, 30, 3, 3, 3, 1, d2);
-            l.getWorld().spawnParticle(Particle.REDSTONE, l3, 30, 3, 3, 3, 1, d3);
-            l.getWorld().spawnParticle(Particle.REDSTONE, l4, 30, 3, 3, 3, 1, d4);
-            l.getWorld().spawnParticle(Particle.REDSTONE, l5, 30, 3, 3, 3, 1, d5);
+            l.getWorld().spawnParticle(Particle.DUST, l1, 30, 3, 3, 3, 1, d1);
+            l.getWorld().spawnParticle(Particle.DUST, l2, 30, 3, 3, 3, 1, d2);
+            l.getWorld().spawnParticle(Particle.DUST, l3, 30, 3, 3, 3, 1, d3);
+            l.getWorld().spawnParticle(Particle.DUST, l4, 30, 3, 3, 3, 1, d4);
+            l.getWorld().spawnParticle(Particle.DUST, l5, 30, 3, 3, 3, 1, d5);
 
             List<LivingEntity> damaged = new ArrayList<>();
 

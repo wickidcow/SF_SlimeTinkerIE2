@@ -59,11 +59,10 @@ public class BlockBreakListener implements Listener {
         EventFriend friend = new EventFriend(player, TraitEventType.BLOCK_BREAK);
 
         friend.setBlock(block);
-        friend.setDrops(block.getDrops(heldItem)); // Stores the event drops. All may not be dropped
-        friend.setAddDrops(new ArrayList<>()); // Additional drops or substitutions for items from the main collection
-        friend.setRemoveDrops(new ArrayList<>()); // Items to remove from the main collection if moved/reformed into the additional
+        friend.setDrops(block.getDrops(heldItem));
+        friend.setAddDrops(new ArrayList<>());
+        friend.setRemoveDrops(new ArrayList<>());
 
-        // Properties
         EventChannels.checkTool(friend);
         EventChannels.checkArmour(friend);
 
@@ -74,14 +73,11 @@ public class BlockBreakListener implements Listener {
                 return;
             }
 
-            // Mods
             modChecks(heldItem, block, friend.getAddDrops());
-
-            // Settle
             EventChannels.settlePotionEffects(friend);
 
             if (ItemUtils.isTool(heldItem)) {
-                if (shouldGrantExp(heldItem, event.getBlock())) { // Should grant exp (checks tool / material validity and the crop state)
+                if (shouldGrantExp(heldItem, event.getBlock())) {
                     Experience.addExp(heldItem, (int) Math.ceil(1 * friend.getToolExpMod()), event.getPlayer(), true);
                 }
                 if (event.getExpToDrop() > 0 && friend.isMetalCheck()) {
@@ -91,7 +87,6 @@ public class BlockBreakListener implements Listener {
             }
 
             EVENT_FRIEND_MAP.put(block.getLocation(), friend);
-
         }
     }
 
@@ -105,7 +100,7 @@ public class BlockBreakListener implements Listener {
         if (friend != null) {
             event.getItems().clear();
             Player player = friend.getPlayer();
-            for (ItemStack i : friend.getDrops()) { // Drop items in original collection not flagged for removal
+            for (ItemStack i : friend.getDrops()) {
                 if (friend.getRemoveDrops().contains(i) || i.getType() == Material.AIR) {
                     continue;
                 }
@@ -119,7 +114,7 @@ public class BlockBreakListener implements Listener {
                 block.getWorld().dropItem(block.getLocation().clone().add(0.5, 0.5, 0.5), i);
             }
 
-            for (ItemStack i : friend.getAddDrops()) { // Then the additional items collection - no removals
+            for (ItemStack i : friend.getAddDrops()) {
                 if (friend.isBlocksIntoInv()) {
                     Map<Integer, ItemStack> remainingItems = player.getInventory().addItem(i);
                     for (ItemStack i2 : remainingItems.values()) {
@@ -133,7 +128,6 @@ public class BlockBreakListener implements Listener {
     }
 
     private boolean shouldGrantExp(ItemStack itemStack, Block block) {
-
         ItemMeta im = itemStack.getItemMeta();
         assert im != null;
         PersistentDataContainer c = im.getPersistentDataContainer();
@@ -141,7 +135,6 @@ public class BlockBreakListener implements Listener {
         String toolType = c.get(Keys.TOOL_INFO_TOOL_TYPE, PersistentDataType.STRING);
         assert toolType != null;
 
-        // Hoe Stuff (Ageable and fully grown only)
         if (block.getBlockData() instanceof Ageable) {
             Ageable ageable = (Ageable) block.getBlockData();
             if (ageable.getAge() == ageable.getMaximumAge()) {
@@ -150,32 +143,27 @@ public class BlockBreakListener implements Listener {
             return false;
         }
 
-        // Block isn't in the block map, so no Exp
         if (!BlockMap.getMaterialMap().containsKey(block.getType())) {
             return false;
         }
 
-        // Return toolType matches the stored one from the map
         return BlockMap.getMaterialMap().get(block.getType()).equals(toolType);
-
     }
 
     private void modChecks(ItemStack heldItem, Block block, Collection<ItemStack> addDrops) {
         modCheckLapis(heldItem, block, addDrops);
     }
 
-
     private void modCheckLapis(ItemStack heldItem, Block block, Collection<ItemStack> addDrops) {
-
         Map<String, Integer> modLevels = Modifications.getAllModLevels(heldItem);
 
-        if (block.getDrops().isEmpty() || !modLevels.containsKey(Material.LAPIS_LAZULI.toString()) || heldItem.containsEnchantment(Enchantment.SILK_TOUCH)) { // There must be drops, the tools must have the lapis mod and the tool cannot have silk
+        if (block.getDrops().isEmpty() || !modLevels.containsKey(Material.LAPIS_LAZULI.toString()) || heldItem.containsEnchantment(Enchantment.SILK_TOUCH)) {
             return;
         }
 
         int lapisLevel = modLevels.get(Material.LAPIS_LAZULI.toString());
         ItemStack dummyFortune = new ItemStack(Material.DIAMOND_PICKAXE);
-        dummyFortune.addEnchantment(Enchantment.LOOT_BONUS_BLOCKS, 3);
+        dummyFortune.addEnchantment(Enchantment.FORTUNE, 3);
 
         List<Material> materialList = new ArrayList<>();
 
@@ -196,7 +184,7 @@ public class BlockBreakListener implements Listener {
                     addDrops.add(additionalDrop);
                     Location location = block.getLocation().clone().add(0.5, 0.5, 0.5);
                     Particle.DustOptions dustOptions = new Particle.DustOptions(Color.BLUE, 2);
-                    block.getWorld().spawnParticle(Particle.REDSTONE, location, 10, 0.2, 0.2, 0.2, 0.5, dustOptions);
+                    block.getWorld().spawnParticle(Particle.DUST, location, 10, 0.2, 0.2, 0.2, 0.5, dustOptions);
                 }
             }
         }
@@ -204,8 +192,6 @@ public class BlockBreakListener implements Listener {
 
     public boolean isLockedTool(Player player, ItemStack itemStack) {
         SlimefunItem slimefunItem = SlimefunItem.getByItem(itemStack);
-        return slimefunItem != null
-            && !slimefunItem.canUse(player, false);
+        return slimefunItem != null && !slimefunItem.canUse(player, false);
     }
-
 }

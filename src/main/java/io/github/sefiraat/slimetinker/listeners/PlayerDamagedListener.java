@@ -102,7 +102,7 @@ public class PlayerDamagedListener implements Listener {
             if (rnd <= (level)) {
                 Entity e = event.getDamager();
                 Particle.DustOptions dustOptions = new Particle.DustOptions(Color.TEAL, 1);
-                e.getWorld().spawnParticle(Particle.REDSTONE, e.getLocation(), 50, 1.5, 1.5, 1.5, 1, dustOptions);
+                e.getWorld().spawnParticle(Particle.DUST, e.getLocation(), 50, 1.5, 1.5, 1.5, 1, dustOptions);
                 l.damage(event.getDamage());
                 event.setCancelled(true);
             }

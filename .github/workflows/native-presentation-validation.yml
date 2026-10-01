@@ -1,0 +1,94 @@
+name: SlimeTinker Native Presentation Validation
+
+on:
+  push:
+    branches: ['work/native-item-presentation-validation']
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Apply exact presentation-only API changes
+        run: |
+          python3 .audit/apply_native_presentation.py
+          git diff --check
+      - name: Install exact coordinated Slimefun and Networks compile dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p candidate bundle
+          gh run download 36801932529 --repo wickidcow/Slimefun-Legacy --name full-stack-core --dir candidate
+          gh run download 36801932529 --repo wickidcow/Slimefun-Legacy --name full-stack-addon-bundle --dir bundle
+          echo 'ea4b0c47ee41b852abb5c97bacbb4f1c0ebc5126c29fb36d39e7c71747d13bdd  candidate/Slimefun-Legacy-full-stack.jar' | sha256sum -c -
+          echo '7cf9bf6ce10949d93da8dce50125d4b1a8385ddbbbac2433ab72f6e6687b0d86  bundle/SF_Addons_1.21.11-26.3.zip' | sha256sum -c -
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          with zipfile.ZipFile('bundle/SF_Addons_1.21.11-26.3.zip') as archive:
+              names=[n for n in archive.namelist() if n.endswith('/SF_Networks1.0.46.jar') or n=='SF_Networks1.0.46.jar']
+              assert len(names)==1,names
+              Path('candidate/Networks.jar').write_bytes(archive.read(names[0]))
+          PY
+          mvn -B install:install-file -Dfile=candidate/Slimefun-Legacy-full-stack.jar -DgroupId=com.github.SlimefunGuguProject -DartifactId=Slimefun4 -Dversion=2024.3.1 -Dpackaging=jar -DgeneratePom=true
+          mvn -B install:install-file -Dfile=candidate/Networks.jar -DgroupId=dev.sefiraat -DartifactId=networks -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+      - name: Run real build and tests across the supported APIs
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          for API in 1.21.11-R0.1-SNAPSHOT 26.2.build.123-stable 26.3-rc-3.build.1-alpha; do
+            mvn -B clean verify -Dpaper.version="$API" -Dmaven.compiler.release=21 2>&1 | tee "evidence/build-$API.log"
+            mkdir -p "evidence/tests-$API"
+            cp target/surefire-reports/TEST-*.xml "evidence/tests-$API/"
+          done
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          reports=list(Path('evidence').glob('tests-*/TEST-*.xml'))
+          assert len(reports)==3,len(reports)
+          for path in reports:
+              suite=ET.parse(path).getroot()
+              assert int(suite.get('tests','0'))==13,suite.attrib
+              assert all(int(suite.get(k,'0'))==0 for k in ('failures','errors','skipped')),suite.attrib
+              print(path,suite.attrib)
+          PY
+      - name: Preserve verified source blobs without moving refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,json,os,subprocess
+          from pathlib import Path
+          names=('src/main/java/io/github/sefiraat/slimetinker/utils/ItemUtils.java','pom.xml')
+          manifest={}
+          for name in names:
+              data=Path(name).read_bytes()
+              sha=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              body=json.dumps({'content':base64.b64encode(data).decode(),'encoding':'base64'})
+              result=subprocess.run(['gh','api','--method','POST',f"repos/{os.environ['GITHUB_REPOSITORY']}/git/blobs",'--input','-','--jq','.sha'],input=body,text=True,capture_output=True,check=True)
+              assert result.stdout.strip()==sha,name
+              manifest[name]=sha
+          Path('evidence/validated-blobs.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: tinker-native-presentation-evidence
+          path: |
+            evidence/
+            target/surefire-reports/TEST-*.xml
+          if-no-files-found: warn
+          retention-days: 14

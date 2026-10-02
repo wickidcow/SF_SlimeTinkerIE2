@@ -3,77 +3,103 @@ name: Build SlimeTinker
 on:
   push:
     branches: ['**']
-    tags:
-      - 'v*'
+    tags: ['v*']
   pull_request:
-    branches: ['**']
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: slimetinker-build-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  VERSION: "2.0.6"
-  OUTPUT_NAME: "SF_SlimeTinker2.0.6.jar"
+  VERSION: '2.0.7'
+  OUTPUT_NAME: SF_SlimeTinker2.0.7.jar
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
         with:
-          java-version: 25
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '25'
           distribution: temurin
           cache: maven
-      - name: Verify canonical release identity
+      - name: Verify narrow 2.0.7 source-preservation boundary
+        run: python3 scripts/verify_presentation_scope.py
+      - name: Install verified compile-only release APIs
+        run: bash scripts/install_release_apis.sh
+      - name: Verify source version and run all tests across supported APIs
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]
-          test "$OUTPUT_NAME" = "SF_SlimeTinker${VERSION}.jar"
           test "$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" = "$VERSION"
-          grep -Fq '<finalName>SF_SlimeTinker${project.version}</finalName>' pom.xml
-          if printf '%s\n%s\n' "$VERSION" "$OUTPUT_NAME" | grep -Eiq '(legacy|english|snapshot)'; then exit 1; fi
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
-      - name: Stage canonical raw JAR
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          BUILT_JAR="target/${OUTPUT_NAME}"
-          test -s "$BUILT_JAR"
-          cp "$BUILT_JAR" "dist/${OUTPUT_NAME}"
-          PLUGIN_VERSION=$(unzip -p "dist/${OUTPUT_NAME}" plugin.yml | awk -F': *' '/^version:/ {gsub(/["'"'"']/,"",$2); print $2; exit}')
-          test "$PLUGIN_VERSION" = "$VERSION"
-          if printf '%s\n' "$PLUGIN_VERSION" | grep -Eiq '(legacy|english|snapshot)'; then exit 1; fi
-          sha256sum "dist/${OUTPUT_NAME}"
-      - name: Upload canonical raw JAR artifact
+          mkdir -p evidence dist
+          SF_ARGS=(-Dslimefun.groupId=com.github.wickidcow -Dslimefun.artifactId=Slimefun-Legacy -Dslimefun.version=4.1.63)
+          # Rebuild the distributable LAST against the oldest supported API.
+          for API in 26.2.build.123-stable 26.3-rc-3.build.1-alpha 1.21.11-R0.1-SNAPSHOT; do
+            mvn -B -ntp clean verify "${SF_ARGS[@]}" -Dpaper.version="$API" -Dmaven.compiler.release=21 2>&1 | tee "evidence/build-$API.log"
+            mkdir -p "evidence/tests-$API"
+            cp target/surefire-reports/TEST-*.xml "evidence/tests-$API/"
+          done
+          cp "target/$OUTPUT_NAME" "dist/$OUTPUT_NAME"
+          python3 scripts/verify_release.py "dist/$OUTPUT_NAME" "$VERSION"
+          sha256sum "dist/$OUTPUT_NAME" > evidence/SHA256SUMS
+          git rev-parse HEAD > evidence/source-commit.txt
+          git diff --exit-code
+      - name: Retain complete test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: slimetinker-test-evidence
+          path: evidence/
+          if-no-files-found: error
+      - name: Upload drop-in JAR
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.OUTPUT_NAME }}
           path: dist/${{ env.OUTPUT_NAME }}
           archive: false
           if-no-files-found: error
-      - name: Publish canonical raw JAR to GitHub Release
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref_name == github.event.repository.default_branch
+
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.OUTPUT_NAME }}
+          path: dist
+      - name: Publish the verified raw JAR without overwriting older releases
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then TAG="$GITHUB_REF_NAME"; else TAG="v${VERSION}"; fi
+          TAG="v${VERSION}"
           JAR="dist/${OUTPUT_NAME}"
+          test -s "$JAR"
+          unzip -tqq "$JAR"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            while IFS= read -r OLD; do
-              if [[ "$OLD" == *.jar && "$OLD" != "$OUTPUT_NAME" ]]; then gh release delete-asset "$TAG" "$OLD" --repo "$GITHUB_REPOSITORY" -y; fi
-            done < <(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
-            gh release upload "$TAG" "$JAR" --repo "$GITHUB_REPOSITORY" --clobber
+            mkdir -p existing
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$OUTPUT_NAME" --dir existing
+            cmp "$JAR" "existing/$OUTPUT_NAME"
+            echo 'Existing release is byte-identical; no replacement needed.'
           else
-            gh release create "$TAG" "$JAR" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --notes "SlimeTinker ${VERSION}: canonical ${OUTPUT_NAME} release." --title "SF_SlimeTinker ${VERSION}"
+            gh release create "$TAG" "$JAR" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "SlimeTinker ${VERSION}" --notes-file "docs/releases/${VERSION}.md"
           fi
-          echo "### Canonical raw JAR published" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Release: $TAG" >> "$GITHUB_STEP_SUMMARY"
-          echo "- File: $OUTPUT_NAME" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$JAR" >> "$GITHUB_STEP_SUMMARY"

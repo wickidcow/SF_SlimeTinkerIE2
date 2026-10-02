@@ -12,7 +12,6 @@ import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.data.persistent.PersistentDataAPI;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
@@ -31,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 
 public final class ItemUtils {
+
+    // Retained legacy output protocol of public String formatting helpers.
+    private static final String LEGACY_WHITE = "\u00a7f";
 
     private ItemUtils() {
         throw new IllegalStateException("Utility class");
@@ -194,7 +196,7 @@ public final class ItemUtils {
             lore.add(ThemeUtils.getLine());
         }
 
-        im.setLore(lore);
+        im.lore(TinkerItemPresentation.lore(lore));
         itemStack.setItemMeta(im);
     }
 
@@ -244,7 +246,7 @@ public final class ItemUtils {
             lore.add(ThemeUtils.getLine());
         }
 
-        im.setLore(lore);
+        im.lore(TinkerItemPresentation.lore(lore));
         itemStack.setItemMeta(im);
     }
 
@@ -293,11 +295,11 @@ public final class ItemUtils {
             ThemeUtils.toTitleCase(second),
             TinkerMaterialManager.getById(third).getColor(),
             ThemeUtils.toTitleCase(third),
-            ChatColor.WHITE,
+            LEGACY_WHITE,
             ThemeUtils.toTitleCase(type)
         );
 
-        im.setDisplayName(name);
+        im.displayName(TinkerItemPresentation.line(name));
         itemStack.setItemMeta(im);
     }
 
@@ -654,14 +656,14 @@ public final class ItemUtils {
     @Nonnull
     public static String getLoreExp(PersistentDataContainer c) {
         return ThemeUtils.ITEM_TOOL + "Level: " +
-            ChatColor.WHITE + getTinkerLevel(c) +
+            LEGACY_WHITE + getTinkerLevel(c) +
             ThemeUtils.PASSIVE + " (" + getTinkerExp(c) + " / " + getTinkerRequiredExp(c) + ")";
     }
 
     @Nonnull
     public static String getLoreModSlots(PersistentDataContainer c) {
         return ThemeUtils.ITEM_TOOL + "Modifier Slots: " +
-            ChatColor.WHITE + getTinkerModifierSlots(c);
+            LEGACY_WHITE + getTinkerModifierSlots(c);
     }
 
     public static boolean rejectCraftingRecipe(@Nonnull SlimefunItemStack i) {

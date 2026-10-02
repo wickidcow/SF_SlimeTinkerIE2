@@ -26,11 +26,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: temurin
           cache: maven
+      - name: Verify narrow 2.0.7 source-preservation boundary
+        run: python3 scripts/verify_presentation_scope.py
       - name: Install verified compile-only release APIs
         run: bash scripts/install_release_apis.sh
       - name: Verify source version and run all tests across supported APIs
@@ -65,3 +68,38 @@ jobs:
           path: dist/${{ env.OUTPUT_NAME }}
           archive: false
           if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.OUTPUT_NAME }}
+          path: dist
+      - name: Publish the verified raw JAR without overwriting older releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          JAR="dist/${OUTPUT_NAME}"
+          test -s "$JAR"
+          unzip -tqq "$JAR"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mkdir -p existing
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$OUTPUT_NAME" --dir existing
+            cmp "$JAR" "existing/$OUTPUT_NAME"
+            echo 'Existing release is byte-identical; no replacement needed.'
+          else
+            gh release create "$TAG" "$JAR" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "SlimeTinker ${VERSION}" --notes-file "docs/releases/${VERSION}.md"
+          fi
+          sha256sum "$JAR" >> "$GITHUB_STEP_SUMMARY"

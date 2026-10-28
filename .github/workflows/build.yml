@@ -32,6 +32,8 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+      - name: Install checksum-verified Apache Maven 3.10.0
+        run: bash scripts/install_maven_3_10.sh
       - name: Verify narrow 2.0.7 source-preservation boundary
         run: python3 scripts/verify_presentation_scope.py
       - name: Install verified compile-only release APIs

@@ -32,6 +32,10 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+      - name: Assert historical same-version publisher is disabled
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_legacy_publish_guard.py' -v
+          python3 scripts/check_legacy_publish_guard.py .github/workflows/build.yml
       - name: Verify narrow 2.0.7 source-preservation boundary
         run: python3 scripts/verify_presentation_scope.py
       - name: Install verified compile-only release APIs
@@ -70,8 +74,11 @@ jobs:
           if-no-files-found: error
 
   publish:
+    # RETIRED: the published v2.0.7 bytes differ from current build artifacts.
+    # A future distinct version needs a separately reviewed exact-source,
+    # native recovery/region/runtime-gated opt-in publishing workflow.
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

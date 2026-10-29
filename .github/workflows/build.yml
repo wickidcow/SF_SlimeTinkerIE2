@@ -32,6 +32,8 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+      - name: Install checksum-verified Apache Maven 3.10.0
+        run: bash scripts/install_maven_3_10.sh
       - name: Assert historical same-version publisher is disabled
         run: |
           python3 -m unittest discover -s scripts -p 'test_legacy_publish_guard.py' -v

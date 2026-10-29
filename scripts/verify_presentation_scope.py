@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 BASE = '051a008d56bce6c1db40d93c7d5c3f3038421509'
 PATH = 'src/main/java/io/github/sefiraat/slimetinker/utils/ItemUtils.java'
 HELPER = 'src/main/java/io/github/sefiraat/slimetinker/utils/TinkerItemPresentation.java'
+CASTS = 'src/main/java/io/github/sefiraat/slimetinker/items/Casts.java'
 
 def old(path):
     return subprocess.check_output(['git', 'show', f'{BASE}:{path}'])
@@ -22,8 +23,21 @@ expected = expected.replace('public final class ItemUtils {', 'public final clas
 expected = expected.replace('ChatColor.WHITE', 'LEGACY_WHITE').replace('im.setLore(lore);', 'im.lore(TinkerItemPresentation.lore(lore));').replace('im.setDisplayName(name);', 'im.displayName(TinkerItemPresentation.line(name));')
 assert Path(PATH).read_bytes() == expected.encode(), 'Non-presentation ItemUtils change'
 assert blob(Path(HELPER).read_bytes()) == '845eefcda71d9ce846f3fea0b806a8a829788bfa'
+# Pin the exact cast-lore-only replacement independently of the historic
+# ItemUtils migration. Allow no item IDs, numbers, punctuation or text drift.
+cast_source = old(CASTS)
+assert blob(cast_source) == '0461b8eff2f69c778f2c66587dfcb3bb5f2b65a1'
+assert cast_source.count(b'ChatColor.WHITE') == 32
+cast_expected = cast_source.decode().replace('import org.bukkit.ChatColor;\n', '')
+cast_expected = cast_expected.replace('public final class Casts {\n', 'public final class Casts {\n\n'
+    '    // Preserve the exact historical section-sign white code in saved cast lore.\n'
+    '    // Bukkit ChatColor.WHITE.toString() yielded these same two characters.\n'
+    '    static final String LEGACY_WHITE = "\\u00a7f";\n')
+cast_expected = cast_expected.replace('ChatColor.WHITE', 'LEGACY_WHITE')
+cast_expected = cast_expected.replace('Bukkit LEGACY_WHITE.toString()', 'Bukkit ChatColor.WHITE.toString()')
+assert Path(CASTS).read_bytes() == cast_expected.encode(), 'Non-cast-lore change'
 changed = subprocess.check_output(['git', 'diff', '--name-only', BASE, 'HEAD', '--', 'src/main']).decode().splitlines()
-assert set(changed) == {PATH, HELPER}, ('Unexpected production/resource changes', changed)
+assert set(changed) == {PATH, HELPER, CASTS}, ('Unexpected production/resource changes', changed)
 ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
 before, after = ET.fromstring(old('pom.xml')), ET.parse('pom.xml').getroot()
 for name in ('groupId', 'artifactId', 'licenses', 'developers', 'scm', 'distributionManagement', 'profiles'):
@@ -35,4 +49,4 @@ for node in before.findall('m:dependencies/m:dependency', ns):
         continue
     matching = [d for d in after.findall('m:dependencies/m:dependency', ns) if d.findtext('m:groupId', namespaces=ns) == group and d.findtext('m:artifactId', namespaces=ns) == artifact]
     assert len(matching) == 1 and ET.tostring(node) == ET.tostring(matching[0]), ('Changed dependency', group, artifact)
-print('Only the final item-presentation boundary changed; runtime identities, resources, dependencies and credits retained.')
+print('Only pinned item-presentation and byte-exact cast white-lore boundaries changed; runtime identities, resources, dependencies and credits retained.')
